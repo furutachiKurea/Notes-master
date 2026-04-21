@@ -64,6 +64,7 @@ public class Contact {
                 return null;
             } finally {
                 cursor.close();
+
             }
         } else {
             Log.d(TAG, "No contact matched with number:" + phoneNumber);
@@ -71,3 +72,5 @@ public class Contact {
         }
     }
 }
+
+//
