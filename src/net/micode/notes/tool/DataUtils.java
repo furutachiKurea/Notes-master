@@ -111,6 +111,37 @@ public class DataUtils {
         return false;
     }
 
+    public static boolean batchUpdateFavorite(ContentResolver resolver, HashSet<Long> ids,
+            int favoriteState) {
+        if (ids == null) {
+            Log.d(TAG, "the ids is null");
+            return true;
+        }
+
+        ArrayList<ContentProviderOperation> operationList = new ArrayList<ContentProviderOperation>();
+        for (long id : ids) {
+            ContentProviderOperation.Builder builder = ContentProviderOperation
+                    .newUpdate(ContentUris.withAppendedId(Notes.CONTENT_NOTE_URI, id));
+            builder.withValue(NoteColumns.FAVORITE, favoriteState);
+            builder.withValue(NoteColumns.LOCAL_MODIFIED, 1);
+            operationList.add(builder.build());
+        }
+
+        try {
+            ContentProviderResult[] results = resolver.applyBatch(Notes.AUTHORITY, operationList);
+            if (results == null || results.length == 0 || results[0] == null) {
+                Log.d(TAG, "update favorite notes failed, ids:" + ids.toString());
+                return false;
+            }
+            return true;
+        } catch (RemoteException e) {
+            Log.e(TAG, String.format("%s: %s", e.toString(), e.getMessage()));
+        } catch (OperationApplicationException e) {
+            Log.e(TAG, String.format("%s: %s", e.toString(), e.getMessage()));
+        }
+        return false;
+    }
+
     /**
      * Get the all folder count except system folders {@link Notes#TYPE_SYSTEM}}
      */

@@ -239,6 +239,13 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             getMenuInflater().inflate(R.menu.note_list_options, menu);
             menu.findItem(R.id.delete).setOnMenuItemClickListener(this);
+            menu.findItem(R.id.favorite).setOnMenuItemClickListener(this);
+            MenuItem favoriteItem = menu.findItem(R.id.favorite);
+            if (mFocusNoteDataItem.isFavorite()) {
+                favoriteItem.setTitle(R.string.menu_unfavorite);
+            } else {
+                favoriteItem.setTitle(R.string.menu_favorite);
+            }
             mMoveMenu = menu.findItem(R.id.move);
             if (mFocusNoteDataItem.getParentId() == Notes.ID_CALL_RECORD_FOLDER
                     || DataUtils.getUserFolderCount(mContentResolver) == 0) {
@@ -339,6 +346,9 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                 case R.id.move:
                     startQueryDestinationFolders();
                     break;
+                case R.id.favorite:
+                    batchFavorite();
+                    break;
                 default:
                     return false;
             }
@@ -414,7 +424,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         mBackgroundQueryHandler.startQuery(FOLDER_NOTE_LIST_QUERY_TOKEN, null,
                 Notes.CONTENT_NOTE_URI, NoteItemData.PROJECTION, selection, new String[] {
                     String.valueOf(mCurrentFolderId)
-                }, NoteColumns.TYPE + " DESC," + NoteColumns.MODIFIED_DATE + " DESC");
+                }, NoteColumns.FAVORITE + " DESC," + NoteColumns.TYPE + " DESC," + NoteColumns.MODIFIED_DATE + " DESC");
     }
 
     private final class BackgroundQueryHandler extends AsyncQueryHandler {
@@ -502,6 +512,23 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                     }
                 }
                 mModeCallBack.finishActionMode();
+            }
+        }.execute();
+    }
+
+    private void batchFavorite() {
+        new AsyncTask<Void, Void, Void>() {
+            protected Void doInBackground(Void... unused) {
+                int newFavoriteState = mFocusNoteDataItem.isFavorite() ? 0 : 1;
+                DataUtils.batchUpdateFavorite(mContentResolver, mNotesListAdapter
+                        .getSelectedItemIds(), newFavoriteState);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void result) {
+                mModeCallBack.finishActionMode();
+                startAsyncNotesListQuery();
             }
         }.execute();
     }
