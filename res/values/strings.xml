@@ -57,6 +57,8 @@
     <string name="menu_font_normal">Medium</string>
     <string name="menu_font_large">Large</string>
     <string name="menu_font_super">Super</string>
+    <string name="menu_favorite">Favorite</string>
+    <string name="menu_unfavorite">Remove from Favorite</string>
     <string name="menu_list_mode">Enter check list</string>
     <string name="menu_normal_mode">Leave check list</string>
     <string name="menu_folder_view">View folder</string>

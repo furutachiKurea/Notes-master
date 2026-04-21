@@ -75,4 +75,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|right"/>
+
+    <ImageView
+        android:id="@+id/iv_favorite_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:src="@drawable/icon_star"
+        android:visibility="gone"/>
 </FrameLayout>

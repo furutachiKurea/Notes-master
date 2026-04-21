@@ -24,6 +24,11 @@
         android:showAsAction="always|withText" />
 
     <item
+        android:id="@+id/favorite"
+        android:title="@string/menu_favorite"
+        android:showAsAction="always|withText" />
+
+    <item
         android:id="@+id/delete"
         android:title="@string/menu_delete"
         android:icon="@drawable/menu_delete"
