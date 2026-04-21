@@ -32,6 +32,7 @@ import net.micode.notes.tool.ResourceParser.NoteItemBgResources;
 
 public class NotesListItem extends LinearLayout {
     private ImageView mAlert;
+    private ImageView mFavorite;
     private TextView mTitle;
     private TextView mTime;
     private TextView mCallName;
@@ -42,6 +43,7 @@ public class NotesListItem extends LinearLayout {
         super(context);
         inflate(context, R.layout.note_item, this);
         mAlert = (ImageView) findViewById(R.id.iv_alert_icon);
+        mFavorite = (ImageView) findViewById(R.id.iv_favorite_icon);
         mTitle = (TextView) findViewById(R.id.tv_title);
         mTime = (TextView) findViewById(R.id.tv_time);
         mCallName = (TextView) findViewById(R.id.tv_name);
@@ -95,6 +97,13 @@ public class NotesListItem extends LinearLayout {
             }
         }
         mTime.setText(DateUtils.getRelativeTimeSpanString(data.getModifiedDate()));
+
+        // Show favorite indicator
+        if (data.isFavorite() && data.getType() == Notes.TYPE_NOTE) {
+            mFavorite.setVisibility(View.VISIBLE);
+        } else {
+            mFavorite.setVisibility(View.GONE);
+        }
 
         setBackground(data);
     }

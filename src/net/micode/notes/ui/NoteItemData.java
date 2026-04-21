@@ -40,6 +40,7 @@ public class NoteItemData {
         NoteColumns.TYPE,
         NoteColumns.WIDGET_ID,
         NoteColumns.WIDGET_TYPE,
+        NoteColumns.FAVORITE,
     };
 
     private static final int ID_COLUMN                    = 0;
@@ -54,6 +55,7 @@ public class NoteItemData {
     private static final int TYPE_COLUMN                  = 9;
     private static final int WIDGET_ID_COLUMN             = 10;
     private static final int WIDGET_TYPE_COLUMN           = 11;
+    private static final int FAVORITE_COLUMN              = 12;
 
     private long mId;
     private long mAlertDate;
@@ -67,6 +69,7 @@ public class NoteItemData {
     private int mType;
     private int mWidgetId;
     private int mWidgetType;
+    private int mFavorite;
     private String mName;
     private String mPhoneNumber;
 
@@ -91,6 +94,7 @@ public class NoteItemData {
         mType = cursor.getInt(TYPE_COLUMN);
         mWidgetId = cursor.getInt(WIDGET_ID_COLUMN);
         mWidgetType = cursor.getInt(WIDGET_TYPE_COLUMN);
+        mFavorite = cursor.getInt(FAVORITE_COLUMN);
 
         mPhoneNumber = "";
         if (mParentId == Notes.ID_CALL_RECORD_FOLDER) {
@@ -208,6 +212,10 @@ public class NoteItemData {
 
     public String getSnippet() {
         return mSnippet;
+    }
+
+    public boolean isFavorite() {
+        return mFavorite > 0;
     }
 
     public boolean hasAlert() {

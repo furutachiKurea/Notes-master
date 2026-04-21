@@ -165,6 +165,12 @@ public class Notes {
          * <P> Type : INTEGER (long) </P>
          */
         public static final String VERSION = "version";
+
+        /**
+         * Whether the note is favorited
+         * <P> Type: INTEGER </P>
+         */
+        public static final String FAVORITE = "favorite";
     }
 
     public interface DataColumns {
