@@ -32,6 +32,11 @@ import net.micode.notes.data.Notes.TextNote;
 import net.micode.notes.tool.ResourceParser.NoteBgResources;
 
 
+/**
+ * 编辑界面使用的工作态便签模型。
+ * 它缓存当前页面正在编辑的内容和设置项，并把变更先写入 {@link Note}
+ * 的差量结构，真正保存时再统一同步到 ContentProvider。
+ */
 public class WorkingNote {
     // Note for the working note
     private Note mNote;
@@ -124,6 +129,7 @@ public class WorkingNote {
         loadNote();
     }
 
+    // 先从 note 主表恢复便签级属性，具体文本和通话数据再到 data 表中继续加载。
     private void loadNote() {
         Cursor cursor = mContext.getContentResolver().query(
                 ContentUris.withAppendedId(Notes.CONTENT_NOTE_URI, mNoteId), NOTE_PROJECTION, null,
@@ -146,6 +152,7 @@ public class WorkingNote {
         loadNoteData();
     }
 
+    // data 表里同时存放文本和通话附加数据，通过 mime type 区分记录类型。
     private void loadNoteData() {
         Cursor cursor = mContext.getContentResolver().query(Notes.CONTENT_DATA_URI, DATA_PROJECTION,
                 DataColumns.NOTE_ID + "=?", new String[] {
@@ -187,6 +194,7 @@ public class WorkingNote {
         return new WorkingNote(context, id, 0);
     }
 
+    // 保存时先为新便签申请 noteId，再把 Note 中缓存的差量统一同步到数据库。
     public synchronized boolean saveNote() {
         if (isWorthSaving()) {
             if (!existInDatabase()) {
@@ -216,6 +224,7 @@ public class WorkingNote {
         return mNoteId > 0;
     }
 
+    // 空白新建便签、已删除便签，以及没有本地改动的旧便签都不需要落库。
     private boolean isWorthSaving() {
         if (mIsDeleted || (!existInDatabase() && TextUtils.isEmpty(mContent))
                 || (existInDatabase() && !mNote.isLocalModified())) {
@@ -229,6 +238,7 @@ public class WorkingNote {
         mNoteSettingStatusListener = l;
     }
 
+    // 这里只更新内存里的待同步字段，真正写库发生在 saveNote()。
     public void setAlertDate(long date, boolean set) {
         if (date != mAlertDate) {
             mAlertDate = date;
@@ -257,6 +267,7 @@ public class WorkingNote {
         }
     }
 
+    // 清单模式本质上只是文本 data 上的 mode 字段切换，界面据此决定展示方式。
     public void setCheckListMode(int mode) {
         if (mMode != mode) {
             if (mNoteSettingStatusListener != null) {
@@ -288,6 +299,7 @@ public class WorkingNote {
         }
     }
 
+    // 通话便签会额外记录电话和通话时间，并把父目录切到通话记录文件夹。
     public void convertToCallNote(String phoneNumber, long callDate) {
         mNote.setCallData(CallNote.CALL_DATE, String.valueOf(callDate));
         mNote.setCallData(CallNote.PHONE_NUMBER, phoneNumber);

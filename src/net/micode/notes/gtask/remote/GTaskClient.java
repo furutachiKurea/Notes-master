@@ -61,6 +61,11 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 
+/**
+ * Google Tasks 远端访问客户端。
+ * 这里走的是旧版网页接口而不是公开 SDK：先用系统 Google 账号拿 auth token，
+ * 再换取网页 cookie 和 client version，之后所有读写都通过拼装 JSON 请求完成。
+ */
 public class GTaskClient {
     private static final String TAG = GTaskClient.class.getSimpleName();
 
@@ -109,6 +114,7 @@ public class GTaskClient {
         return mInstance;
     }
 
+    // 登录状态同时受 cookie 过期时间和当前选择的同步账号影响。
     public boolean login(Activity activity) {
         // we suppose that the cookie would expire after 5 minutes
         // then we need to re-login
@@ -164,6 +170,7 @@ public class GTaskClient {
         return true;
     }
 
+    // 从 Android 系统账号里获取 Google auth token，必要时先作废旧 token。
     private String loginGoogleAccount(Activity activity, boolean invalidateToken) {
         String authToken;
         AccountManager accountManager = AccountManager.get(activity);
@@ -207,6 +214,7 @@ public class GTaskClient {
         return authToken;
     }
 
+    // 首次登录失败时，先作废 token 再重试一次，避免继续使用过期凭证。
     private boolean tryToLoginGtask(Activity activity, String authToken) {
         if (!loginGtask(authToken)) {
             // maybe the auth token is out of date, now let's invalidate the
@@ -225,6 +233,7 @@ public class GTaskClient {
         return true;
     }
 
+    // 访问 GTask 首页，拿到登录 cookie，并从页面脚本里解析 client version。
     private boolean loginGtask(String authToken) {
         int timeoutConnection = 10000;
         int timeoutSocket = 15000;
@@ -323,6 +332,7 @@ public class GTaskClient {
         }
     }
 
+    // 所有远端写操作最终都走这里发送，请求体里的 "r" 是网页接口约定格式。
     private JSONObject postRequest(JSONObject js) throws NetworkFailureException {
         if (!mLoggedin) {
             Log.e(TAG, "please login first");
@@ -433,6 +443,7 @@ public class GTaskClient {
         }
     }
 
+    // 累积更新动作并按批次提交，避免一次塞入过多 action 导致网页接口报错。
     public void addUpdateNode(Node node) throws NetworkFailureException {
         if (node != null) {
             // too many update items may result in an error
@@ -447,6 +458,7 @@ public class GTaskClient {
         }
     }
 
+    // 同列表移动主要依赖 prior sibling 排序，跨列表移动还要额外指定目标 list。
     public void moveTask(Task task, TaskList preParent, TaskList curParent)
             throws NetworkFailureException {
         commitUpdate();

@@ -29,6 +29,9 @@ import net.micode.notes.ui.NotesListActivity;
 import net.micode.notes.ui.NotesPreferenceActivity;
 
 
+/**
+ * 把同步流程包成后台任务，并负责把进度同步到通知栏和 Service 广播。
+ */
 public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
 
     private static int GTASK_SYNC_NOTIFICATION_ID = 5234235;
@@ -82,6 +85,7 @@ public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
         mNotifiManager.notify(GTASK_SYNC_NOTIFICATION_ID, notification);
     }
 
+    // 后台线程里先发“正在登录”的进度，再把真正的同步工作交给 GTaskManager。
     @Override
     protected Integer doInBackground(Void... unused) {
         publishProgess(mContext.getString(R.string.sync_progress_login, NotesPreferenceActivity
@@ -89,6 +93,7 @@ public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
         return mTaskManager.sync(mContext, this);
     }
 
+    // 同步过程中的每条进度消息都会同时更新通知栏，并在 Service 模式下对外广播。
     @Override
     protected void onProgressUpdate(String... progress) {
         showNotification(R.string.ticker_syncing, progress[0]);
@@ -97,6 +102,7 @@ public class GTaskASyncTask extends AsyncTask<Void, String, Integer> {
         }
     }
 
+    // 根据同步结果展示最终通知，并回调上层清理 Service 的运行状态。
     @Override
     protected void onPostExecute(Integer result) {
         if (result == GTaskManager.STATE_SUCCESS) {

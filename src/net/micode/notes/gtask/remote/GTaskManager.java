@@ -48,6 +48,11 @@ import java.util.Iterator;
 import java.util.Map;
 
 
+/**
+ * Google Tasks 同步总控类。
+ * 它负责拉取远端任务列表、扫描本地便签、判断每个节点该向哪一侧同步，
+ * 并维护同步期间用到的 gid/nid 映射和 metadata 映射。
+ */
 public class GTaskManager {
     private static final String TAG = GTaskManager.class.getSimpleName();
 
@@ -111,6 +116,7 @@ public class GTaskManager {
         mActivity = activity;
     }
 
+    // 一次完整同步的入口：登录、拉取远端、双向同步，再回写本地 sync_id。
     public int sync(Context context, GTaskASyncTask asyncTask) {
         if (mSyncing) {
             Log.d(TAG, "Sync is in progress");
@@ -168,6 +174,7 @@ public class GTaskManager {
         return mCancelled ? STATE_SYNC_CANCELLED : STATE_SUCCESS;
     }
 
+    // 初始化远端任务树和 metadata 索引，供后续内容比对和节点回写使用。
     private void initGTaskList() throws NetworkFailureException {
         if (mCancelled)
             return;
@@ -247,6 +254,7 @@ public class GTaskManager {
         }
     }
 
+    // 内容同步固定按“回收站 -> 文件夹 -> 普通便签”的顺序进行。
     private void syncContent() throws NetworkFailureException {
         int syncType;
         Cursor c = null;
@@ -351,6 +359,7 @@ public class GTaskManager {
 
     }
 
+    // 文件夹要先同步，后面的任务节点才能根据 gid <-> nid 映射找到本地父目录。
     private void syncFolder() throws NetworkFailureException {
         Cursor c = null;
         String gid;
@@ -476,6 +485,7 @@ public class GTaskManager {
             GTaskClient.getInstance().commitUpdate();
     }
 
+    // 按 Node 计算出的同步动作，把节点分发到对应的本地/远端处理逻辑。
     private void doContentSync(int syncType, Node node, Cursor c) throws NetworkFailureException {
         if (mCancelled) {
             return;
@@ -522,6 +532,7 @@ public class GTaskManager {
         }
     }
 
+    // 把远端节点落到本地，并立刻建立 gid/nid 映射供后续子任务复用。
     private void addLocalNode(Node node) throws NetworkFailureException {
         if (mCancelled) {
             return;
@@ -596,6 +607,7 @@ public class GTaskManager {
         updateRemoteMeta(node.getGid(), sqlNote);
     }
 
+    // 用远端内容覆盖本地已有节点，同时保留正确的本地父目录关系。
     private void updateLocalNode(Node node, Cursor c) throws NetworkFailureException {
         if (mCancelled) {
             return;
@@ -619,6 +631,7 @@ public class GTaskManager {
         updateRemoteMeta(node.getGid(), sqlNote);
     }
 
+    // 把本地节点推送到远端，并把创建出来的远端 gid 回写到本地记录。
     private void addRemoteNode(Node node, Cursor c) throws NetworkFailureException {
         if (mCancelled) {
             return;
@@ -692,6 +705,7 @@ public class GTaskManager {
         mNidToGid.put(sqlNote.getId(), n.getGid());
     }
 
+    // 更新远端节点内容；如果本地改了父目录，还要额外执行一次远端 move。
     private void updateRemoteNode(Node node, Cursor c) throws NetworkFailureException {
         if (mCancelled) {
             return;
@@ -730,6 +744,7 @@ public class GTaskManager {
         sqlNote.commit(true);
     }
 
+    // metadata 里保存远端任务对应的本地 JSON 快照，供下次同步判断内容是否变化。
     private void updateRemoteMeta(String gid, SqlNote sqlNote) throws NetworkFailureException {
         if (sqlNote != null && sqlNote.isNoteType()) {
             MetaData metaData = mMetaHashMap.get(gid);
@@ -746,6 +761,7 @@ public class GTaskManager {
         }
     }
 
+    // 远端提交完成后重新拉一遍任务树，把 lastModified 回写到本地 sync_id。
     private void refreshLocalSyncId() throws NetworkFailureException {
         if (mCancelled) {
             return;

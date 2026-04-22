@@ -23,6 +23,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 
+/**
+ * 同步任务的 Service 外壳。
+ * 它负责启动/取消后台同步，并把当前是否在同步和进度文本广播给设置页。
+ */
 public class GTaskSyncService extends Service {
     public final static String ACTION_STRING_NAME = "sync_action_type";
 
@@ -42,6 +46,7 @@ public class GTaskSyncService extends Service {
 
     private static String mSyncProgress = "";
 
+    // 用静态 mSyncTask 作为全局开关，避免同一时刻重复启动多条同步任务。
     private void startSync() {
         if (mSyncTask == null) {
             mSyncTask = new GTaskASyncTask(this, new GTaskASyncTask.OnCompleteListener() {
@@ -67,6 +72,7 @@ public class GTaskSyncService extends Service {
         mSyncTask = null;
     }
 
+    // 通过 intent extra 区分“开始同步”和“取消同步”两个动作。
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Bundle bundle = intent.getExtras();
@@ -97,6 +103,7 @@ public class GTaskSyncService extends Service {
         return null;
     }
 
+    // 设置页不会直接持有 AsyncTask，所以通过广播暴露同步状态和进度文本。
     public void sendBroadcast(String msg) {
         mSyncProgress = msg;
         Intent intent = new Intent(GTASK_SERVICE_BROADCAST_NAME);
