@@ -275,6 +275,7 @@ public class GTaskManager {
                     }, null);
             if (c != null) {
                 while (c.moveToNext()) {
+                    // 本地回收站里的非系统节点会优先视为“待同步删除”，避免后续又被当成普通便签参与双向合并。
                     gid = c.getString(SqlNote.GTASK_ID_COLUMN);
                     node = mGTaskHashMap.get(gid);
                     if (node != null) {
@@ -305,6 +306,7 @@ public class GTaskManager {
                     }, NoteColumns.TYPE + " DESC");
             if (c != null) {
                 while (c.moveToNext()) {
+                    // 先把本地已知的 gid 从远端哈希中摘掉，剩余节点才是真正“仅远端存在”的增量。
                     gid = c.getString(SqlNote.GTASK_ID_COLUMN);
                     node = mGTaskHashMap.get(gid);
                     if (node != null) {
@@ -339,6 +341,7 @@ public class GTaskManager {
         while (iter.hasNext()) {
             Map.Entry<String, Node> entry = iter.next();
             node = entry.getValue();
+            // 走到这里说明该节点在本地遍历中从未匹配到，需要从远端补建到本地。
             doContentSync(Node.SYNC_ACTION_ADD_LOCAL, node, null);
         }
 
@@ -500,6 +503,7 @@ public class GTaskManager {
                 addRemoteNode(node, c);
                 break;
             case Node.SYNC_ACTION_DEL_LOCAL:
+                // 远端已删但本地还在时，先清 metadata，再把本地 id 记入待删除集合，统一批量清理。
                 meta = mMetaHashMap.get(c.getString(SqlNote.GTASK_ID_COLUMN));
                 if (meta != null) {
                     GTaskClient.getInstance().deleteNode(meta);
@@ -507,6 +511,7 @@ public class GTaskManager {
                 mLocalDeleteIdMap.add(c.getLong(SqlNote.ID_COLUMN));
                 break;
             case Node.SYNC_ACTION_DEL_REMOTE:
+                // 本地已删时要同时删除真实任务节点和它对应的 metadata 快照。
                 meta = mMetaHashMap.get(node.getGid());
                 if (meta != null) {
                     GTaskClient.getInstance().deleteNode(meta);
@@ -642,6 +647,7 @@ public class GTaskManager {
 
         // update remotely
         if (sqlNote.isNoteType()) {
+            // 普通便签在远端表现为 Task，必须先通过本地 parentId 找到所属 TaskList。
             Task task = new Task();
             task.setContentByLocalJSON(sqlNote.getContent());
 
@@ -675,6 +681,7 @@ public class GTaskManager {
                 String gid = entry.getKey();
                 TaskList list = entry.getValue();
 
+                // 文件夹同步按名称去重，避免根目录/通话目录或同名本地文件夹重复创建远端列表。
                 if (list.getName().equals(folderName)) {
                     tasklist = list;
                     if (mGTaskHashMap.containsKey(gid)) {
@@ -695,6 +702,7 @@ public class GTaskManager {
         }
 
         // update local note
+        // 远端创建成功后必须立即回写 gid，否则下一轮同步会把同一条本地记录再次识别成“新增”。
         sqlNote.setGtaskId(n.getGid());
         sqlNote.commit(false);
         sqlNote.resetLocalModified();
@@ -732,6 +740,7 @@ public class GTaskManager {
             }
             TaskList curParentList = mGTaskListHashMap.get(curParentGid);
 
+            // Google Tasks 的“内容更新”和“跨列表移动”是两件事，所以父目录变化要单独发起 move。
             if (preParentList != curParentList) {
                 preParentList.removeChildTask(task);
                 curParentList.addChildTask(task);
@@ -786,6 +795,7 @@ public class GTaskManager {
                     if (node != null) {
                         mGTaskHashMap.remove(gid);
                         ContentValues values = new ContentValues();
+                        // sync_id 记录的是远端最后修改时间，后续 Node.getSyncAction 会依赖它判断本地/远端谁更新过。
                         values.put(NoteColumns.SYNC_ID, node.getLastModified());
                         mContentResolver.update(ContentUris.withAppendedId(Notes.CONTENT_NOTE_URI,
                                 c.getLong(SqlNote.ID_COLUMN)), values, null, null);
