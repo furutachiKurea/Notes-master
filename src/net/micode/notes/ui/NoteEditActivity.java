@@ -72,6 +72,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+/**
+ * 便签编辑页。
+ * 它负责把不同入口（查看、搜索结果、新建、通话记录）统一转换成 WorkingNote，
+ * 并在普通文本模式、清单模式、提醒、桌面挂件之间维护同一份编辑状态。
+ */
 public class NoteEditActivity extends Activity implements OnClickListener,
         NoteSettingChangedListener, OnTextViewChangeListener {
     private class HeadViewHolder {
@@ -185,6 +190,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
          * then jump to the NotesListActivity
          */
         mWorkingNote = null;
+        // ACTION_VIEW 负责打开已有便签；ACTION_INSERT_OR_EDIT 负责新建普通便签或通话便签。
         if (TextUtils.equals(Intent.ACTION_VIEW, intent.getAction())) {
             long noteId = intent.getLongExtra(Intent.EXTRA_UID, 0);
             mUserQuery = "";
@@ -269,6 +275,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void initNoteScreen() {
+        // 每次恢复界面时都从 WorkingNote 回填 UI，避免直接依赖控件里的临时文本状态。
         mNoteEditor.setTextAppearance(this, TextAppearanceResources
                 .getTexAppearanceResource(mFontSizeId));
         if (mWorkingNote.getCheckListMode() == TextNote.MODE_CHECK_LIST) {
@@ -407,6 +414,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void updateWidget() {
+        // 便签内容保存后若绑定了桌面挂件，需要主动广播刷新对应尺寸的 provider。
         Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         if (mWorkingNote.getWidgetType() == Notes.TYPE_WIDGET_2X) {
             intent.setClass(this, NoteWidgetProvider_2x.class);
@@ -587,6 +595,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void deleteCurrentNote() {
+        // 开启同步时删除会先移动到回收站，便于后续与远端任务列表对齐删除状态。
         if (mWorkingNote.existInDatabase()) {
             HashSet<Long> ids = new HashSet<Long>();
             long id = mWorkingNote.getNoteId();
@@ -621,6 +630,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
             saveNote();
         }
         if (mWorkingNote.getNoteId() > 0) {
+            // 提醒使用 note Uri 作为 PendingIntent 的 data，保证不同便签的闹钟不会互相覆盖。
             Intent intent = new Intent(this, AlarmReceiver.class);
             intent.setData(ContentUris.withAppendedId(Notes.CONTENT_NOTE_URI, mWorkingNote.getNoteId()));
             PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
@@ -692,6 +702,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private void switchToListMode(String text) {
+        // 清单模式把一整段文本按换行拆成多条可勾选项，并始终补一个空白输入框方便继续追加。
         mEditTextList.removeAllViews();
         String[] items = text.split("\n");
         int index = 0;
@@ -784,6 +795,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
     private boolean getWorkingText() {
         boolean hasChecked = false;
+        // 保存前统一把 UI 重新折叠回字符串，保证普通模式和清单模式写回的是同一份内容源。
         if (mWorkingNote.getCheckListMode() == TextNote.MODE_CHECK_LIST) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < mEditTextList.getChildCount(); i++) {
@@ -806,6 +818,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
     }
 
     private boolean saveNote() {
+        // 编辑页所有离开场景最终都走这里：先收集控件内容，再交给 WorkingNote 决定是否真正落库。
         getWorkingText();
         boolean saved = mWorkingNote.saveNote();
         if (saved) {

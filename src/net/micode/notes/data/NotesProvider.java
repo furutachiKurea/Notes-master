@@ -35,6 +35,11 @@ import net.micode.notes.data.Notes.NoteColumns;
 import net.micode.notes.data.NotesDatabaseHelper.TABLE;
 
 
+/**
+ * 便签应用对外暴露的数据入口。
+ * UI、工具类和同步模块都通过这里统一访问 note/data 两张表，
+ * 同时由它负责搜索建议查询、版本号递增和数据变更通知。
+ */
 public class NotesProvider extends ContentProvider {
     private static final UriMatcher mMatcher;
 
@@ -91,6 +96,7 @@ public class NotesProvider extends ContentProvider {
         Cursor c = null;
         SQLiteDatabase db = mHelper.getReadableDatabase();
         String id = null;
+        // 根据 URI 分流到 note/data/search 三类查询，调用方不需要直接关心底层表结构。
         switch (mMatcher.match(uri)) {
             case URI_NOTE:
                 c = db.query(TABLE.NOTE, projection, selection, selectionArgs, null, null,
@@ -153,6 +159,7 @@ public class NotesProvider extends ContentProvider {
     public Uri insert(Uri uri, ContentValues values) {
         SQLiteDatabase db = mHelper.getWritableDatabase();
         long dataId = 0, noteId = 0, insertedId = 0;
+        // data 表插入时会顺带解析 noteId，保证编辑页能收到对应便签的刷新通知。
         switch (mMatcher.match(uri)) {
             case URI_NOTE:
                 insertedId = noteId = db.insert(TABLE.NOTE, null, values);
@@ -189,6 +196,7 @@ public class NotesProvider extends ContentProvider {
         String id = null;
         SQLiteDatabase db = mHelper.getWritableDatabase();
         boolean deleteData = false;
+        // 删除 note 时额外保护系统文件夹；删除 data 时则通知 note 列表整体刷新。
         switch (mMatcher.match(uri)) {
             case URI_NOTE:
                 selection = "(" + selection + ") AND " + NoteColumns.ID + ">0 ";
@@ -235,6 +243,7 @@ public class NotesProvider extends ContentProvider {
         String id = null;
         SQLiteDatabase db = mHelper.getWritableDatabase();
         boolean updateData = false;
+        // note 表每次更新前都会先递增 version，供同步模块判断本地是否发生过修改。
         switch (mMatcher.match(uri)) {
             case URI_NOTE:
                 increaseNoteVersion(-1, selection, selectionArgs);
@@ -274,6 +283,7 @@ public class NotesProvider extends ContentProvider {
     }
 
     private void increaseNoteVersion(long id, String selection, String[] selectionArgs) {
+        // 这里直接拼 UPDATE 语句，兼容“按单条记录”和“按条件批量更新”两种入口。
         StringBuilder sql = new StringBuilder(120);
         sql.append("UPDATE ");
         sql.append(TABLE.NOTE);
