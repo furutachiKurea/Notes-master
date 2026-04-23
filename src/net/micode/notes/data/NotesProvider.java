@@ -131,6 +131,8 @@ public class NotesProvider extends ContentProvider {
                 }
 
                 try {
+                    // Both search entry points collapse to the same snippet query so UI search and
+                    // search suggestions stay consistent.
                     searchString = String.format("%%%s%%", searchString);
                     c = db.rawQuery(NOTES_SNIPPET_SEARCH_QUERY,
                             new String[] { searchString });

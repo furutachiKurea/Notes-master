@@ -198,6 +198,7 @@ public class WorkingNote {
     public synchronized boolean saveNote() {
         if (isWorthSaving()) {
             if (!existInDatabase()) {
+                // The row in the note table must exist before NoteData can bind data records to it.
                 if ((mNoteId = Note.getNewNoteId(mContext, mFolderId)) == 0) {
                     Log.e(TAG, "Create new note fail with id:" + mNoteId);
                     return false;
@@ -226,6 +227,7 @@ public class WorkingNote {
 
     // 空白新建便签、已删除便签，以及没有本地改动的旧便签都不需要落库。
     private boolean isWorthSaving() {
+        // Skip empty drafts, deleted notes, and unchanged persisted notes to avoid noisy writes.
         if (mIsDeleted || (!existInDatabase() && TextUtils.isEmpty(mContent))
                 || (existInDatabase() && !mNote.isLocalModified())) {
             return false;

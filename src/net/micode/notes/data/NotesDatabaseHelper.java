@@ -84,6 +84,9 @@ public class NotesDatabaseHelper extends SQLiteOpenHelper {
         TABLE.DATA + "(" + DataColumns.NOTE_ID + ");";
 
     /**
+     * Folder note counts are maintained in SQL so every code path that mutates parent ids stays in
+     * sync without duplicating bookkeeping in Java.
+     *
      * Increase folder's note count when move note to the folder
      */
     private static final String NOTE_INCREASE_FOLDER_COUNT_ON_UPDATE_TRIGGER =
@@ -134,6 +137,8 @@ public class NotesDatabaseHelper extends SQLiteOpenHelper {
         " END";
 
     /**
+     * Snippet text mirrors the main text row and powers note list previews plus search results.
+     *
      * Update note's content when insert data with type {@link DataConstants#NOTE}
      */
     private static final String DATA_UPDATE_NOTE_CONTENT_ON_INSERT_TRIGGER =
