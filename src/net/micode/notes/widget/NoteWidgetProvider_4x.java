@@ -23,22 +23,44 @@ import net.micode.notes.R;
 import net.micode.notes.data.Notes;
 import net.micode.notes.tool.ResourceParser;
 
-
+/**
+ * 4x大小便签Widget的具体实现类。
+ * 负责4x尺寸Widget的特定配置，包括布局、背景资源和类型标识。
+ */
 public class NoteWidgetProvider_4x extends NoteWidgetProvider {
+    /**
+     * Widget更新时的回调方法。
+     * @param context 应用上下文
+     * @param appWidgetManager Widget管理器
+     * @param appWidgetIds 需要更新的Widget ID数组
+     */
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.update(context, appWidgetManager, appWidgetIds);
     }
 
+    /**
+     * 返回4x Widget的布局资源ID。
+     * @return 4x Widget的布局资源ID
+     */
     protected int getLayoutId() {
         return R.layout.widget_4x;
     }
 
+    /**
+     * 获取4x Widget对应背景色的资源ID。
+     * @param bgId 背景色ID
+     * @return 4x Widget的背景资源ID
+     */
     @Override
     protected int getBgResourceId(int bgId) {
         return ResourceParser.WidgetBgResources.getWidget4xBgResource(bgId);
     }
 
+    /**
+     * 返回4x Widget的类型常量。
+     * @return TYPE_WIDGET_4X
+     */
     @Override
     protected int getWidgetType() {
         return Notes.TYPE_WIDGET_4X;
