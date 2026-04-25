@@ -2,7 +2,6 @@
 
 ## 项目简介
 
-MiCode 便签（小米便签社区开源版），Android 原生应用，使用 SQLite + ContentProvider 存储数据，支持 Google Tasks 同步、桌面小部件、闹钟提醒等功能。
 
 ---
 
